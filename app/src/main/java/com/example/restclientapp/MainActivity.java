@@ -7,6 +7,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
+import androidx.core.splashscreen.SplashScreen;
 
 import com.example.restclientapp.api.AuthService;
 import com.example.restclientapp.api.RetrofitClient;
@@ -26,6 +27,7 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        SplashScreen splashScreen = SplashScreen.installSplashScreen(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
@@ -111,6 +113,14 @@ public class MainActivity extends AppCompatActivity {
                     // 200 (Registro exitoso)
                     Toast.makeText(MainActivity.this, "Registro exitoso. Ahora puedes iniciar sesión.", Toast.LENGTH_LONG).show();
 
+                }
+                else if (response.code() == 401) {
+                    // ERROR 401: Credenciales inválidas (email o contraseña incorrectos)
+                    Toast.makeText(MainActivity.this, "Credenciales inválidas. Inténtalo de nuevo.", Toast.LENGTH_LONG).show();
+                } else {
+                    // ERROR HTTP (400, 404, 500)
+                    Log.e("LOGIN", "Error HTTP: " + response.code());
+                    Toast.makeText(MainActivity.this, "Error de servidor o petición: " + response.code(), Toast.LENGTH_LONG).show();
                 }
             }
             @Override
