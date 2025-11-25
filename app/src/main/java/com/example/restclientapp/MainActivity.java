@@ -102,6 +102,14 @@ public class MainActivity extends AppCompatActivity {
                             "Login exitoso. Bienvenid@ de nuevo",
                             Toast.LENGTH_LONG).show();
 
+                    SessionManager sessionManager = new SessionManager(getApplicationContext());
+                    sessionManager.guardarSesion(email, password);
+
+
+                    Intent intent = new Intent(MainActivity.this, Menu.class);
+                    startActivity(intent);
+
+                    finish();
                 } else if (response.code() == 401) {
                     // ERROR 401: Credenciales inválidas (email o contraseña incorrectos)
                     Toast.makeText(MainActivity.this, "Credenciales inválidas. Inténtalo de nuevo.", Toast.LENGTH_LONG).show();
