@@ -42,6 +42,18 @@ public class Menu extends AppCompatActivity {
                 // C. Cerramos el Menú para que no pueda volver atrás
                 finish();
             });
+
+            Button btnTienda = findViewById(R.id.btnTienda);
+
+            btnTienda.setOnClickListener(v -> {
+                // Creamos el intento para ir a la actividad Tienda
+                Intent intent = new Intent(Menu.this, Tienda.class);
+                startActivity(intent);
+
+                // NOTA: Aquí NO ponemos finish().
+                // Queremos que si el usuario da al botón "Atrás" en la tienda,
+                // vuelva a este Menú, no se salga de la app.
+            });
         }
 
         OnBackPressedCallback callback = new OnBackPressedCallback(true) {
