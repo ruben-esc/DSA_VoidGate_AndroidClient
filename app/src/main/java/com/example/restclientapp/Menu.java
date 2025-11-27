@@ -47,7 +47,7 @@ public class Menu extends AppCompatActivity {
 
             btnTienda.setOnClickListener(v -> {
                 // Creamos el intento para ir a la actividad Tienda
-                Intent intent = new Intent(Menu.this, Tienda.class);
+                Intent intent = new Intent(Menu.this, TiendaActivity.class);
                 startActivity(intent);
 
                 // NOTA: Aquí NO ponemos finish().

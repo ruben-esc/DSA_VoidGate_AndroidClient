@@ -2,4 +2,14 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <color name="void_black">#050505</color>
+    <color name="void_background_dark">#0B0B10</color>
+    <color name="neon_cyan">#00F7FF</color>
+    <color name="neon_violet">#BD00FF</color>
+    <color name="gold">#FFD700</color>
+
+    <color name="glass_panel_bg">#D9101015</color>
+    <color name="glass_border">#33FFFFFF</color>
+    <color name="input_bg">#66000000</color>
 </resources>

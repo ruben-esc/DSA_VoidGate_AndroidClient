@@ -7,7 +7,7 @@
     <style name="Theme.RESTClientApp" parent="Base.Theme.RESTClientApp" />
 
     <style name="Theme.RESTClientApp.Splash" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenAnimatedIcon">@drawable/logo</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
         <item name="windowSplashScreenBackground">@color/white</item>
         <item name="postSplashScreenTheme">@style/Theme.RESTClientApp</item>
     </style>

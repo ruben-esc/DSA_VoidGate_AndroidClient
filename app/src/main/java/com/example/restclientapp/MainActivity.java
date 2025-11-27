@@ -7,16 +7,15 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ProgressBar;
+import android.widget.TextView; // Importante para los botones de texto
 import android.widget.Toast;
 import androidx.core.splashscreen.SplashScreen;
 import android.content.Intent;
-
 
 import com.example.restclientapp.api.AuthService;
 import com.example.restclientapp.api.RetrofitClient;
 import com.example.restclientapp.model.User;
 import com.example.restclientapp.model.Verificacion;
-
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -24,95 +23,148 @@ import retrofit2.Response;
 
 public class MainActivity extends AppCompatActivity {
 
-    private EditText emailEditText;
-    private EditText passwordEditText;
-    private Button loginButton;
-    private Button registerButton;
-    private EditText codigoEditText;
-    private Button verificarButton;
-    private ProgressBar progressBar;
-    private String ultimoemailregistrado = null;
+    // --- VARIABLES DE LAYOUT (PANTALLAS) ---
+    private View layoutLogin, layoutRegister, layoutVerificacion;
 
+    // --- VARIABLES DE LOGIN ---
+    private EditText etEmailLogin, etPasswordLogin;
+    private Button btnLogin;
+
+    // --- VARIABLES DE REGISTRO ---
+    private EditText etNameRegister, etEmailRegister, etPasswordRegister;
+    private Button btnRegister;
+
+    // --- VARIABLES DE VERIFICACIÓN ---
+    private EditText etEmailVerify, etCodeVerify;
+    private Button btnVerify;
+
+    private ProgressBar progressBar;
+
+    // Variable auxiliar para guardar el email tras registro
+    private String ultimoEmailRegistrado = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         SplashScreen splashScreen = SplashScreen.installSplashScreen(this);
         super.onCreate(savedInstanceState);
 
-        // Verificar si ya hay sesión iniciada
+        // 1. Verificar Sesión
         SessionManager sessionManager = new SessionManager(getApplicationContext());
-
         if (sessionManager.estalogueado()) {
-            // ¡Ya está logueado! Vamos directo a la tienda/juego
             Intent intent = new Intent(MainActivity.this, Menu.class);
             startActivity(intent);
-            finish(); // Cerramos esta actividad para que no vuelva aquí
-            return; // Importante para que no cargue el layout del login
+            finish();
+            return;
         }
 
-        // Si no está logueado, mostramos la pantalla de Login normal
+        // 2. Cargar el XML nuevo
         setContentView(R.layout.activity_main);
 
-        emailEditText = findViewById(R.id.edit_text_email);
-        passwordEditText = findViewById(R.id.edit_text_password);
-        loginButton = findViewById(R.id.button_login);
-        registerButton = findViewById(R.id.button_register);
-        codigoEditText = findViewById(R.id.editTextNumber);
-        verificarButton = findViewById(R.id.button);
-        progressBar = findViewById(R.id.progressBar);
+        // 3. INICIALIZAR TODAS LAS VISTAS (Vinculamos con el XML nuevo)
+        initViews();
 
+        // 4. CONFIGURAR LA NAVEGACIÓN ENTRE PANTALLAS (LO QUE PEDISTE)
+        setupNavigation();
 
-        loginButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                performLogin();
-            }
-        });
-        registerButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                performRegister();
-            }
-        });
-        verificarButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                performVerify();
-            }
-        });
+        // 5. LISTENERS DE LOS BOTONES DE ACCIÓN
+        btnLogin.setOnClickListener(v -> performLogin());
+        btnRegister.setOnClickListener(v -> performRegister());
+        btnVerify.setOnClickListener(v -> performVerify());
     }
+
+    // --- MÉTODO AUXILIAR PARA VINCULAR VISTAS ---
+    private void initViews() {
+        // Layouts contenedores
+        layoutLogin = findViewById(R.id.layoutLogin);
+        layoutRegister = findViewById(R.id.layoutRegister);
+        layoutVerificacion = findViewById(R.id.layoutVerificacion);
+
+        // Login Inputs
+        etEmailLogin = findViewById(R.id.edit_text_email_login);
+        etPasswordLogin = findViewById(R.id.edit_text_password_login);
+        btnLogin = findViewById(R.id.button_login);
+
+        // Register Inputs
+        etNameRegister = findViewById(R.id.edit_text_name_register);
+        etEmailRegister = findViewById(R.id.edit_text_email_register);
+        etPasswordRegister = findViewById(R.id.edit_text_password_register);
+        btnRegister = findViewById(R.id.button_register);
+
+        // Verify Inputs
+        etEmailVerify = findViewById(R.id.edit_text_email_verify);
+        etCodeVerify = findViewById(R.id.edit_text_code);
+        btnVerify = findViewById(R.id.button_verify); // Asegúrate que en el XML el ID es button_verify (o button)
+
+        // Progress Bar
+        progressBar = findViewById(R.id.progressBar);
+    }
+
+    // --- MÉTODO PARA LA NAVEGACIÓN VISUAL ---
+    private void setupNavigation() {
+        // Botones de texto para cambiar de pantalla
+        TextView btnGoToRegister = findViewById(R.id.btnGoToRegister);
+        TextView btnGoToVerify = findViewById(R.id.btnGoToVerify);
+        TextView btnBackToLogin1 = findViewById(R.id.btnBackToLoginFromRegister);
+        TextView btnBackToLogin2 = findViewById(R.id.btnBackToLoginFromVerify);
+
+        // Ir a Registro
+        btnGoToRegister.setOnClickListener(v -> {
+            layoutLogin.setVisibility(View.GONE);
+            layoutRegister.setVisibility(View.VISIBLE);
+            layoutVerificacion.setVisibility(View.GONE);
+        });
+
+        // Ir a Verificación Manual
+        btnGoToVerify.setOnClickListener(v -> {
+            layoutLogin.setVisibility(View.GONE);
+            layoutRegister.setVisibility(View.GONE);
+            layoutVerificacion.setVisibility(View.VISIBLE);
+
+            // Si ya escribieron el email en el login, lo copiamos aquí por comodidad
+            if(etEmailLogin.getText().length() > 0) {
+                etEmailVerify.setText(etEmailLogin.getText().toString());
+            }
+        });
+
+        // Volver al Login (Lógica común)
+        View.OnClickListener volverLogin = v -> {
+            layoutLogin.setVisibility(View.VISIBLE);
+            layoutRegister.setVisibility(View.GONE);
+            layoutVerificacion.setVisibility(View.GONE);
+        };
+
+        btnBackToLogin1.setOnClickListener(volverLogin);
+        btnBackToLogin2.setOnClickListener(volverLogin);
+    }
+
     private void showLoading(boolean isLoading) {
         if (isLoading) {
             progressBar.setVisibility(View.VISIBLE);
-            // Desactivar botones para que no pulsen dos veces
-            emailEditText.setEnabled(false);
-            passwordEditText.setEnabled(false);
-            codigoEditText.setEnabled(false);
-            loginButton.setEnabled(false);
-            registerButton.setEnabled(false);
-            verificarButton.setEnabled(false);
+            btnLogin.setEnabled(false);
+            btnRegister.setEnabled(false);
+            btnVerify.setEnabled(false);
         } else {
             progressBar.setVisibility(View.GONE);
-            // Reactivar botones
-            emailEditText.setEnabled(true);
-            passwordEditText.setEnabled(true);
-            codigoEditText.setEnabled(true);
-            loginButton.setEnabled(true);
-            registerButton.setEnabled(true);
-            verificarButton.setEnabled(true);
+            btnLogin.setEnabled(true);
+            btnRegister.setEnabled(true);
+            btnVerify.setEnabled(true);
         }
     }
 
+    // --- LÓGICA DE LOGIN ---
     private void performLogin() {
-        String email = emailEditText.getText().toString().trim();
-        String password = passwordEditText.getText().toString().trim();
+        // OJO: Cogemos los datos del layout de LOGIN
+        String email = etEmailLogin.getText().toString().trim();
+        String password = etPasswordLogin.getText().toString().trim();
 
         if (email.isEmpty() || password.isEmpty()) {
             Toast.makeText(this, "Introduce el email y la contraseña.", Toast.LENGTH_SHORT).show();
             return;
         }
+
         User loginRequest = new User(email, password);
         showLoading(true);
+
         AuthService service = RetrofitClient.getApiService();
         Call<User> call = service.login(loginRequest);
 
@@ -121,159 +173,144 @@ public class MainActivity extends AppCompatActivity {
             public void onResponse(Call<User> call, Response<User> response) {
                 showLoading(false);
                 if (response.isSuccessful() && response.body() != null) {
-                    // 200 (Login exitoso).
-                    User loggedInUser = response.body();
+                    Toast.makeText(MainActivity.this, "Login exitoso.", Toast.LENGTH_SHORT).show();
 
-                    Toast.makeText(MainActivity.this,
-                            "Login exitoso. Bienvenid@ de nuevo",
-                            Toast.LENGTH_LONG).show();
-
+                    // Guardar sesión
                     SessionManager sessionManager = new SessionManager(getApplicationContext());
                     sessionManager.guardarSesion(email, password);
 
-
+                    // Ir al Menu
                     Intent intent = new Intent(MainActivity.this, Menu.class);
                     startActivity(intent);
-
                     finish();
+
                 } else if (response.code() == 401) {
-                    // ERROR 401: Credenciales inválidas (email o contraseña incorrectos)
-                    Toast.makeText(MainActivity.this, "Credenciales inválidas. Inténtalo de nuevo.", Toast.LENGTH_LONG).show();
+                    Toast.makeText(MainActivity.this, "Credenciales inválidas.", Toast.LENGTH_LONG).show();
+                } else if (response.code() == 403) {
+                    // Si el usuario no está verificado, le mandamos a la pantalla de verificar
+                    Toast.makeText(MainActivity.this, "Email no verificado. Introduce el código.", Toast.LENGTH_LONG).show();
+
+                    layoutLogin.setVisibility(View.GONE);
+                    layoutVerificacion.setVisibility(View.VISIBLE);
+                    etEmailVerify.setText(email); // Rellenamos el email automáticamente
+                    ultimoEmailRegistrado = email;
+
                 } else {
-                    // ERROR HTTP (400, 404, 500)
-                    Log.e("LOGIN", "Error HTTP: " + response.code());
-                    Toast.makeText(MainActivity.this, "Error de servidor o petición: " + response.code(), Toast.LENGTH_LONG).show();
+                    Toast.makeText(MainActivity.this, "Error: " + response.code(), Toast.LENGTH_LONG).show();
                 }
             }
 
             @Override
             public void onFailure(Call<User> call, Throwable t) {
-                //FALLO DE CONEXIÓN: Error de red o servidor no disponible.
                 showLoading(false);
-                Log.e("LOGIN", "Fallo de conexión: " + t.getMessage());
-                Toast.makeText(MainActivity.this,
-                        "Error de red: ¿Está el servidor corriendo en 10.0.2.2:8080/dsaApp/ ?",
-                        Toast.LENGTH_LONG).show();
+                Toast.makeText(MainActivity.this, "Error de conexión.", Toast.LENGTH_SHORT).show();
+                Log.e("LOGIN", t.getMessage());
             }
         });
     }
-    private void performRegister() {
-        String email = emailEditText.getText().toString().trim();
-        String password = passwordEditText.getText().toString().trim();
 
-        if (email.isEmpty() || password.isEmpty()) {
-            Toast.makeText(this, "Introduce el email y la contraseña.", Toast.LENGTH_SHORT).show();
+    // --- LÓGICA DE REGISTRO ---
+    private void performRegister() {
+        // OJO: Cogemos los datos del layout de REGISTRO
+        String nombre = etNameRegister.getText().toString().trim();
+        String email = etEmailRegister.getText().toString().trim();
+        String password = etPasswordRegister.getText().toString().trim();
+
+        if (email.isEmpty() || password.isEmpty() || nombre.isEmpty()) {
+            Toast.makeText(this, "Rellena todos los campos.", Toast.LENGTH_SHORT).show();
             return;
         }
+
         showLoading(true);
-        User registerRequest = new User(email, password);
+
+        User registerRequest = new User();
+        registerRequest.setNombre(nombre);
+        registerRequest.setEmail(email);
+        registerRequest.setPassword(password);
+
         AuthService service = RetrofitClient.getApiService();
         Call<Void> call = service.register(registerRequest);
+
         call.enqueue(new Callback<Void>() {
             @Override
             public void onResponse(Call<Void> call, Response<Void> response) {
                 showLoading(false);
                 if (response.isSuccessful()) {
-                    // 201 (Registro exitoso)
-                    Toast.makeText(MainActivity.this,
-                            "Registro exitoso. Revisa tu email para verificar tu cuenta.",
-                            Toast.LENGTH_LONG).show();
+                    Toast.makeText(MainActivity.this, "Registro exitoso. Verifica tu email.", Toast.LENGTH_LONG).show();
 
+                    ultimoEmailRegistrado = email;
 
-                    ultimoemailregistrado = email;
+                    // CAMBIO AUTOMÁTICO DE PANTALLA
+                    layoutRegister.setVisibility(View.GONE);
+                    layoutVerificacion.setVisibility(View.VISIBLE);
+
+                    // Pre-rellenamos el email en la verificación
+                    etEmailVerify.setText(email);
+
                     return;
                 }
 
-                // 409 → email ya registrado
                 if (response.code() == 409) {
-                    Toast.makeText(MainActivity.this,
-                            "Ese email ya está registrado.",
-                            Toast.LENGTH_LONG).show();
-                    return;
+                    Toast.makeText(MainActivity.this, "Ese email ya está registrado.", Toast.LENGTH_LONG).show();
+                } else {
+                    Toast.makeText(MainActivity.this, "Error: " + response.code(), Toast.LENGTH_LONG).show();
                 }
-
-                // 400 → campos inválidos o email mal formateado
-                if (response.code() == 400) {
-                    Toast.makeText(MainActivity.this,
-                            "Datos inválidos o incompletos.",
-                            Toast.LENGTH_LONG).show();
-                    return;
-                }
-
-                // Otros errores
-                Log.e("REGISTER", "Error HTTP: " + response.code());
-                Toast.makeText(MainActivity.this,
-                        "Error en la petición: " + response.code(),
-                        Toast.LENGTH_LONG).show();
             }
 
             @Override
             public void onFailure(Call<Void> call, Throwable t) {
                 showLoading(false);
-                Log.e("REGISTER", "Fallo de conexión: " + t.getMessage());
-                Toast.makeText(MainActivity.this,
-                        "Error de red: ¿El servidor está corriendo?",
-                        Toast.LENGTH_LONG).show();
+                Toast.makeText(MainActivity.this, "Fallo de conexión.", Toast.LENGTH_SHORT).show();
             }
         });
     }
-        private void performVerify() {
 
-            // Si no hay email registrado aún
-            if (ultimoemailregistrado == null) {
-                Toast.makeText(this, "Primero registra un usuario.", Toast.LENGTH_SHORT).show();
-                return;
-            }
+    // --- LÓGICA DE VERIFICACIÓN ---
+    private void performVerify() {
+        // OJO: Cogemos los datos del layout de VERIFICACIÓN
+        String email = etEmailVerify.getText().toString().trim();
+        String codigo = etCodeVerify.getText().toString().trim();
 
-            String codigo = codigoEditText.getText().toString().trim();
-            if (codigo.isEmpty()) {
-                Toast.makeText(this, "Introduce el código de verificación.", Toast.LENGTH_SHORT).show();
-                return;
-            }
-            showLoading(true);
-            Verificacion verificacion = new Verificacion(ultimoemailregistrado, codigo);
-            AuthService service = RetrofitClient.getApiService();
-            Call<Void> call = service.verifyAccount(verificacion);
-
-            call.enqueue(new Callback<Void>() {
-                @Override
-                public void onResponse(Call<Void> call, Response<Void> response) {
-                    showLoading(false);
-
-                    if (response.isSuccessful()) {
-                        Toast.makeText(MainActivity.this,
-                                "Cuenta verificada correctamente. Ya puedes iniciar sesión.",
-                                Toast.LENGTH_LONG).show();
-
-                        // Ocultar campos de verificación tras éxito
-                        codigoEditText.setVisibility(View.GONE);
-                        verificarButton.setVisibility(View.GONE);
-
-                        return;
-                    }
-
-                    // Código incorrecto
-                    if (response.code() == 401) {
-                        Toast.makeText(MainActivity.this,
-                                "Código incorrecto.",
-                                Toast.LENGTH_LONG).show();
-                        return;
-                    }
-
-                    // Otros errores
-                    Toast.makeText(MainActivity.this,
-                            "Error: " + response.code(),
-                            Toast.LENGTH_LONG).show();
-                }
-
-                @Override
-                public void onFailure(Call<Void> call, Throwable t) {
-                    showLoading(false);
-                    Toast.makeText(MainActivity.this,
-                            "Error de conexión: " + t.getMessage(),
-                            Toast.LENGTH_LONG).show();
-                }
-            });
+        if (email.isEmpty() || codigo.isEmpty()) {
+            Toast.makeText(this, "Faltan datos.", Toast.LENGTH_SHORT).show();
+            return;
         }
 
+        showLoading(true);
+        Verificacion verificacion = new Verificacion(email, codigo);
+        AuthService service = RetrofitClient.getApiService();
+        Call<Void> call = service.verifyAccount(verificacion);
+
+        call.enqueue(new Callback<Void>() {
+            @Override
+            public void onResponse(Call<Void> call, Response<Void> response) {
+                showLoading(false);
+
+                if (response.isSuccessful()) {
+                    Toast.makeText(MainActivity.this, "Cuenta verificada. Inicia sesión.", Toast.LENGTH_LONG).show();
+
+                    // Volver al Login automáticamente
+                    layoutVerificacion.setVisibility(View.GONE);
+                    layoutLogin.setVisibility(View.VISIBLE);
+
+                    // Rellenar el login para facilitar
+                    etEmailLogin.setText(email);
+                    etPasswordLogin.setText(""); // Por seguridad limpiar pass
+                    return;
+                }
+
+                if (response.code() == 401 || response.code() == 400) {
+                    Toast.makeText(MainActivity.this, "Código incorrecto.", Toast.LENGTH_LONG).show();
+                } else {
+                    Toast.makeText(MainActivity.this, "Error: " + response.code(), Toast.LENGTH_LONG).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Void> call, Throwable t) {
+                showLoading(false);
+                Toast.makeText(MainActivity.this, "Error de conexión.", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
 }
