@@ -3,7 +3,7 @@ package com.example.restclientapp.model;
 import java.util.Map;
 public class User {
 
-    private String id;
+    private int id;
     private String nombre; // Devuelto en la respuesta
     private String email;  // Usado en la petición y devuelto en la respuesta
     private String password; // Usado en la petición
@@ -18,7 +18,7 @@ public class User {
 
     public User() {}
 
-    public String getId(){
+    public int getId(){
         return id;
     }
     public String getNombre() {

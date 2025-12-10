@@ -4,38 +4,37 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import android.os.Bundle;
-import android.view.View;
+import android.view.View; // Importante
 import android.widget.Button;
-import android.widget.EditText; // Añadido
+import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
+// Asegúrate de importar SharedPreferences si usas MODE_PRIVATE directamente
+import android.content.Context;
+import android.content.SharedPreferences;
+
 import com.example.restclientapp.api.AuthService;
 import com.example.restclientapp.api.RetrofitClient;
 import com.example.restclientapp.model.ObjetoCompra;
 import com.example.restclientapp.model.Producto;
 import com.example.restclientapp.model.User;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
 public class TiendaActivity extends AppCompatActivity {
 
-    private TextView tvMonedas;
+    private TextView tvMonedas, btnBack;
+    private Button btnTabMercado, btnTabInventario, btnDevAdd;
+    private EditText etDevMonedas;
     private RecyclerView recyclerView;
     private ProductosAdapter adapter;
 
-    // CORRECCIÓN: btnBack ahora es TextView para coincidir con el XML
-    private TextView btnBack;
-    private Button btnTabMercado, btnTabInventario;
-
-    // Controles de desarrollador
-    private EditText etDevMonedas;
-    private Button btnDevAdd;
-
-    // Datos en memoria
     private String currentUserEmail;
     private User currentUserData;
 
@@ -44,70 +43,54 @@ public class TiendaActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_tienda);
 
-        // 1. Obtener email de la sesión
         SessionManager session = new SessionManager(this);
         currentUserEmail = session.getEmail();
 
-        // 2. Inicializar Vistas (IDs deben coincidir con activity_tienda.xml)
+        // Inicializar vistas
         tvMonedas = findViewById(R.id.tvMonedasUsuario);
-
         btnTabMercado = findViewById(R.id.btnTabMercado);
         btnTabInventario = findViewById(R.id.btnTabInventario);
         btnBack = findViewById(R.id.btnBack);
-
         recyclerView = findViewById(R.id.recyclerViewProductos);
-
-        // Controles Dev
         etDevMonedas = findViewById(R.id.etDevMonedas);
         btnDevAdd = findViewById(R.id.btnDevAdd);
 
-        // 3. Configurar RecyclerView (Grid de 2 columnas)
+        // Configurar RecyclerView
         recyclerView.setLayoutManager(new GridLayoutManager(this, 2));
         adapter = new ProductosAdapter();
         recyclerView.setAdapter(adapter);
 
-        // Listener para comprar items (Callback del adaptador)
-        adapter.setListener(nombreProducto -> realizarCompra(nombreProducto));
+        // --- CORRECCIÓN IMPORTANTE ---
+        // Ahora el listener recibe un INT (idProducto), no un String.
+        adapter.setListener(idProducto -> realizarCompra(idProducto));
 
-        // 4. Configurar Botones de Pestañas
+        // Listeners de botones
         btnTabMercado.setOnClickListener(v -> cargarTienda());
         btnTabInventario.setOnClickListener(v -> cargarInventario());
-
-        // Listener botón volver (CORRECCIÓN)
         btnBack.setOnClickListener(v -> finish());
-
-        // Listener Botón Dev (Añadir monedas)
         btnDevAdd.setOnClickListener(v -> inyectarMonedas());
 
-        // 5. Cargar datos iniciales
         actualizarDatosUsuario();
-        cargarTienda(); // Empezamos en la tienda
+        cargarTienda();
     }
 
-    // --- CARGAR DATOS DEL USUARIO (Monedas e Inventario) ---
     private void actualizarDatosUsuario() {
         AuthService service = RetrofitClient.getApiService();
         Call<User> call = service.getUser(currentUserEmail);
-
         call.enqueue(new Callback<User>() {
             @Override
             public void onResponse(Call<User> call, Response<User> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     currentUserData = response.body();
-                    // Actualizar HUD Monedas
                     tvMonedas.setText(currentUserData.getMonedas() + " CR");
                 }
             }
             @Override
-            public void onFailure(Call<User> call, Throwable t) {
-                Toast.makeText(TiendaActivity.this, "Error al cargar datos", Toast.LENGTH_SHORT).show();
-            }
+            public void onFailure(Call<User> call, Throwable t) { }
         });
     }
 
-    // --- PESTAÑA: TIENDA ---
     private void cargarTienda() {
-        // Visual: Resaltar botón activo (Cambia opacidad)
         btnTabMercado.setAlpha(1.0f);
         btnTabInventario.setAlpha(0.5f);
 
@@ -120,11 +103,10 @@ public class TiendaActivity extends AppCompatActivity {
                 if (response.isSuccessful() && response.body() != null) {
                     List<ProductosAdapter.ItemDisplay> items = new ArrayList<>();
                     for (Producto p : response.body()) {
-                        items.add(new ProductosAdapter.ItemDisplay(p)); // Convertir a modo Tienda
+                        // El constructor ahora extrae p.getId() internamente
+                        items.add(new ProductosAdapter.ItemDisplay(p));
                     }
                     adapter.setItems(items);
-                } else {
-                    Toast.makeText(TiendaActivity.this, "La tienda está vacía", Toast.LENGTH_SHORT).show();
                 }
             }
             @Override
@@ -134,13 +116,10 @@ public class TiendaActivity extends AppCompatActivity {
         });
     }
 
-    // --- PESTAÑA: INVENTARIO ---
     private void cargarInventario() {
-        // Visual
         btnTabMercado.setAlpha(0.5f);
         btnTabInventario.setAlpha(1.0f);
 
-        // Pedimos datos frescos del usuario para asegurar que el inventario está actualizado
         AuthService service = RetrofitClient.getApiService();
         service.getUser(currentUserEmail).enqueue(new Callback<User>() {
             @Override
@@ -148,12 +127,11 @@ public class TiendaActivity extends AppCompatActivity {
                 if(response.isSuccessful() && response.body() != null) {
                     currentUserData = response.body();
                     Map<String, Integer> inventarioMap = currentUserData.getInventario();
-
                     List<ProductosAdapter.ItemDisplay> items = new ArrayList<>();
 
                     if (inventarioMap != null) {
                         for (Map.Entry<String, Integer> entry : inventarioMap.entrySet()) {
-                            // Convertir a modo Inventario
+                            // Constructor de inventario (sin ID)
                             items.add(new ProductosAdapter.ItemDisplay(entry.getKey(), entry.getValue()));
                         }
                     }
@@ -165,19 +143,34 @@ public class TiendaActivity extends AppCompatActivity {
         });
     }
 
-    // --- ACCIÓN: COMPRAR ---
-    private void realizarCompra(String nombreProducto) {
-        ObjetoCompra compra = new ObjetoCompra(nombreProducto, currentUserEmail);
-        AuthService service = RetrofitClient.getApiService();
+    // --- LÓGICA DE COMPRA CORREGIDA ---
+    private void realizarCompra(int idProducto) {
 
+        // 1. Recuperamos el ID numérico del usuario de SharedPreferences
+        SharedPreferences prefs = getSharedPreferences("user_prefs", MODE_PRIVATE);
+        // IMPORTANTE: Asegúrate de guardar "userId" (int) en tu LoginActivity.
+        int idUsuario = prefs.getInt("userId", -1);
+
+        if (idUsuario == -1) {
+            Toast.makeText(this, "Error: Sesión inválida. Haz login de nuevo.", Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        // 2. Creamos el objeto con enteros
+        ObjetoCompra compra = new ObjetoCompra(idProducto, idUsuario);
+
+        // 3. Llamada a Retrofit
+        AuthService service = RetrofitClient.getApiService();
         Call<Void> call = service.comprarProducto(compra);
+
         call.enqueue(new Callback<Void>() {
             @Override
             public void onResponse(Call<Void> call, Response<Void> response) {
                 if (response.isSuccessful() || response.code() == 201) {
                     Toast.makeText(TiendaActivity.this, "¡Compra Exitosa!", Toast.LENGTH_SHORT).show();
-                    actualizarDatosUsuario(); // Refrescar monedas
-                } else if (response.code() == 402) {
+                    actualizarDatosUsuario(); // Refrescar monedas e inventario
+                } else if (response.code() == 402 || response.code() == 409) {
+                    // 402 = Payment Required, 409 = Conflict (A veces usado para saldo insuficiente)
                     Toast.makeText(TiendaActivity.this, "Saldo Insuficiente", Toast.LENGTH_LONG).show();
                 } else {
                     Toast.makeText(TiendaActivity.this, "Error: " + response.code(), Toast.LENGTH_SHORT).show();
@@ -190,19 +183,11 @@ public class TiendaActivity extends AppCompatActivity {
         });
     }
 
-    // --- ACCIÓN: INYECTAR MONEDAS (DEV) ---
     private void inyectarMonedas() {
         String cantidadStr = etDevMonedas.getText().toString();
-
-        // Validación básica
-        if (cantidadStr.isEmpty()) {
-            Toast.makeText(this, "Escribe una cantidad", Toast.LENGTH_SHORT).show();
-            return;
-        }
+        if (cantidadStr.isEmpty()) return;
 
         int cantidad = Integer.parseInt(cantidadStr);
-
-        // Llamada al Backend
         AuthService service = RetrofitClient.getApiService();
         Call<Void> call = service.updateMonedas(currentUserEmail, cantidad);
 
@@ -210,20 +195,13 @@ public class TiendaActivity extends AppCompatActivity {
             @Override
             public void onResponse(Call<Void> call, Response<Void> response) {
                 if (response.isSuccessful()) {
-                    Toast.makeText(TiendaActivity.this, "¡Fondos inyectados! 💰", Toast.LENGTH_SHORT).show();
-                    etDevMonedas.setText(""); // Limpiar caja
-
-                    // IMPORTANTE: Refrescar la pantalla para ver el dinero nuevo
+                    Toast.makeText(TiendaActivity.this, "¡Fondos añadidos!", Toast.LENGTH_SHORT).show();
+                    etDevMonedas.setText("");
                     actualizarDatosUsuario();
-                } else {
-                    Toast.makeText(TiendaActivity.this, "Error: " + response.code(), Toast.LENGTH_SHORT).show();
                 }
             }
-
             @Override
-            public void onFailure(Call<Void> call, Throwable t) {
-                Toast.makeText(TiendaActivity.this, "Fallo de red", Toast.LENGTH_SHORT).show();
-            }
+            public void onFailure(Call<Void> call, Throwable t) { }
         });
     }
 }

@@ -1,11 +1,18 @@
 package com.example.restclientapp.model;
 
 public class ObjetoCompra {
-    String nombreProducto;
-    String emailUser;
+    private int itemId;
+    private int userId;
 
-    public ObjetoCompra(String nombreProducto, String emailUser) {
-        this.nombreProducto = nombreProducto;
-        this.emailUser = emailUser;
+    public ObjetoCompra(int itemId, int userId) {
+        this.itemId = itemId;
+        this.userId = userId;
+    }
+    public int getItemId(){
+        return this.itemId;
+    }
+    public int getUserId(){
+        return this.userId;
+
     }
 }

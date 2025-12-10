@@ -1,6 +1,9 @@
 package com.example.restclientapp;
 
 import androidx.appcompat.app.AppCompatActivity;
+
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -152,8 +155,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     // --- LÓGICA DE LOGIN ---
+    // --- LÓGICA DE LOGIN ---
     private void performLogin() {
-        // OJO: Cogemos los datos del layout de LOGIN
         String email = etEmailLogin.getText().toString().trim();
         String password = etPasswordLogin.getText().toString().trim();
 
@@ -173,11 +176,21 @@ public class MainActivity extends AppCompatActivity {
             public void onResponse(Call<User> call, Response<User> response) {
                 showLoading(false);
                 if (response.isSuccessful() && response.body() != null) {
+                    User user = response.body(); // Obtenemos el usuario completo del servidor
+
                     Toast.makeText(MainActivity.this, "Login exitoso.", Toast.LENGTH_SHORT).show();
 
-                    // Guardar sesión
+                    // 1. Guardar sesión (Tu lógica actual)
                     SessionManager sessionManager = new SessionManager(getApplicationContext());
                     sessionManager.guardarSesion(email, password);
+
+                    // --- NUEVO: GUARDAR ID PARA LA TIENDA ---
+                    // Esto es vital para que TiendaActivity sepa quién está comprando
+                    SharedPreferences prefs = getSharedPreferences("user_prefs", Context.MODE_PRIVATE);
+                    SharedPreferences.Editor editor = prefs.edit();
+                    editor.putInt("userId", user.getId()); // Guardamos el ID numérico (ej: 5)
+                    editor.apply();
+                    // ----------------------------------------
 
                     // Ir al Menu
                     Intent intent = new Intent(MainActivity.this, Menu.class);
@@ -187,12 +200,11 @@ public class MainActivity extends AppCompatActivity {
                 } else if (response.code() == 401) {
                     Toast.makeText(MainActivity.this, "Credenciales inválidas.", Toast.LENGTH_LONG).show();
                 } else if (response.code() == 403) {
-                    // Si el usuario no está verificado, le mandamos a la pantalla de verificar
+                    // Usuario no verificado
                     Toast.makeText(MainActivity.this, "Email no verificado. Introduce el código.", Toast.LENGTH_LONG).show();
-
                     layoutLogin.setVisibility(View.GONE);
                     layoutVerificacion.setVisibility(View.VISIBLE);
-                    etEmailVerify.setText(email); // Rellenamos el email automáticamente
+                    etEmailVerify.setText(email);
                     ultimoEmailRegistrado = email;
 
                 } else {
