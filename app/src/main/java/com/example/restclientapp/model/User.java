@@ -4,9 +4,9 @@ import java.util.Map;
 public class User {
 
     private int id;
-    private String nombre; // Devuelto en la respuesta
-    private String email;  // Usado en la petición y devuelto en la respuesta
-    private String password; // Usado en la petición
+    private String nombre;
+    private String email;
+    private String password;
 
     private int monedas;
     private Map<String, Integer> inventario;

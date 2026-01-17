@@ -5,7 +5,8 @@ import retrofit2.converter.gson.GsonConverterFactory;
 public class RetrofitClient {
 
     // IMPORTANTE: Usar 10.0.2.2 para conectar al localhost de tu PC desde el emulador.
-    private static final String BASE_URL = "https://dsa2.upc.edu/dsaApp/";
+    //https://dsa2.upc.edu/dsaApp/
+    private static final String BASE_URL = "http://10.0.2.2:8080/dsaApp/";
 
     private static Retrofit retrofit = null;
     public static AuthService getApiService() {

@@ -1,10 +1,11 @@
 package com.example.restclientapp;
 
+import android.content.Context;
 import android.content.DialogInterface;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.widget.Button;
 import android.content.Intent;
-
 import androidx.activity.EdgeToEdge;
 import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AlertDialog;
@@ -12,6 +13,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import com.unity3d.player.UnityPlayerActivity;
 
 public class Menu extends AppCompatActivity {
 
@@ -25,6 +27,24 @@ public class Menu extends AppCompatActivity {
                 Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
                 v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
                 return insets;
+            });
+            Button btnStartGame = findViewById(R.id.btnStartGame); // El ID que pusimos en el XML
+
+            btnStartGame.setOnClickListener(v -> {
+                // A. Recuperar el ID del usuario para mandarlo al juego
+                SharedPreferences prefs = getSharedPreferences("user_prefs", Context.MODE_PRIVATE);
+                int userId = prefs.getInt("userId", -1);
+                String userEmail = new SessionManager(this).getEmail();
+
+                // B. Crear el Intent hacia Unity
+                Intent intent = new Intent(Menu.this, UnityPlayerActivity.class);
+
+                // C. Pasar datos (Opcional pero recomendado)
+                // Unity podrá leer estos "arguments" al iniciar
+                intent.putExtra("arguments", "userId=" + userId + ";email=" + userEmail);
+
+                // D. Iniciar el juego
+                startActivity(intent);
             });
 
             Button btnLogout = findViewById(R.id.btnLogout);
